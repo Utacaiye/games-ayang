@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#e11d48" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<title>Love Dash — Tap Mode 💘</title>
-<meta name="description" content="Mini game romantis untuk ponsel: tap hati untuk skor, hindari bom. Android & iPhone ready.">
+<title>Love Dash — Tap Mode v2 💘</title>
+<meta name="description" content="Versi tap yang lebih responsif: ketuk hati untuk skor, hindari bom. Android & iPhone ready.">
 
 <style>
   :root{ --rose:#e11d48; }
@@ -53,7 +53,7 @@
 <div class="app">
   <div class="card" style="margin-bottom:12px">
     <h1>Love Dash 💝</h1>
-    <div class="muted">Tap-hati mode — Android & iPhone ready. Ketuk ❤, jangan sentuh 💣.</div>
+    <div class="muted">Tap-hati yang lebih responsif — Android & iPhone. Ketuk ❤, jangan sentuh 💣.</div>
   </div>
 
   <div id="config" class="card" style="margin-bottom:12px">
@@ -100,17 +100,19 @@
 
 <script>
 /* =========================
-   CONSTANTS
+   TUNING
    ========================= */
-const HIDDEN_THRESHOLD = 20; // minimal skor, tidak ditampilkan
-const HEART_RATIO = 0.6;     // campuran hati:bom
-const BASE_SPEED = 2.0;      // jatuh lebih cepat
-const SPEED_SCALE = 0.03;    // skor lebih tinggi -> lebih cepat
-const SPAWN_BASE = 0.035;    // spawn rapat
-const SPAWN_SCALE = 0.0009;  // adaptif
+const THRESHOLD = 20;
+const HEART_RATIO = 0.6;
+const BASE_SPEED = 2.0;
+const SPEED_SCALE = 0.035;
+const SPAWN_BASE = 0.038;
+const SPAWN_SCALE = 0.0012;
+const HIT_RADIUS_SCALE = 0.75;
+const AIM_ASSIST_PX = 28;
 
 /* =========================
-   RESPONSIVE CANVAS SCALING (HiDPI)
+   RESPONSIVE CANVAS
    ========================= */
 const $ = (sel) => document.querySelector(sel);
 const canvas = $("#game");
@@ -127,7 +129,7 @@ window.addEventListener('orientationchange', ()=> setTimeout(fitCanvas, 250));
 fitCanvas();
 
 /* =========================
-   SAFE SCROLL / TOUCH
+   SAFE TOUCH
    ========================= */
 document.addEventListener('touchmove', (e)=>{
   if (e.target === canvas) e.preventDefault();
@@ -135,7 +137,7 @@ document.addEventListener('touchmove', (e)=>{
 document.body.style.overscrollBehavior = 'contain';
 
 /* =========================
-   UI ELEMENTS
+   UI
    ========================= */
 const partnerInput = $("#partnerName");
 const specialMsgInput = $("#specialMsg");
@@ -151,13 +153,13 @@ const endText = $("#endText");
 const playAgain = $("#playAgain");
 
 const store = {
-  get best(){ try{ return Number(localStorage.getItem("loveDashBestTap")||0) }catch{ return 0 } },
-  set best(v){ try{ localStorage.setItem("loveDashBestTap", v) }catch{} }
+  get best(){ try{ return Number(localStorage.getItem("loveDashBestTapV2")||0) }catch{ return 0 } },
+  set best(v){ try{ localStorage.setItem("loveDashBestTapV2", v) }catch{} }
 };
 bestBadge.textContent = "Best: " + store.best;
 
 /* =========================
-   AUDIO — MOBILE FRIENDLY
+   AUDIO
    ========================= */
 let audioCtx = null;
 let soundMuted = false;
@@ -189,7 +191,7 @@ function beep(freq=880, dur=0.08, type="sine", gain=0.12){
 function chordSuccess(){
   if(soundMuted) return;
   ensureAudio();
-  const freqs = [523,659,784]; // C-E-G
+  const freqs = [523,659,784];
   const now = audioCtx.currentTime;
   freqs.forEach((f,i)=>{
     const o = audioCtx.createOscillator();
@@ -218,14 +220,14 @@ function boom(){
 }
 
 /* =========================
-   GAME STATE
+   GAME
    ========================= */
 const state = {
   running:false,
   time:30,
   score:0,
-  objects:[], // {type:'heart'|'bomb', x,y,size,speed,phase}
-  particles:[], // floating +1 / -2
+  objects:[],
+  particles:[],
 };
 let lastTs = 0;
 
@@ -243,6 +245,7 @@ function start(){
   state.running = true;
   endOverlay.classList.add("hidden");
   lastTs = performance.now();
+  unlockAudio(); // non-blocking
   requestAnimationFrame(loop);
 }
 
@@ -250,7 +253,7 @@ function end(){
   state.running = false;
   const partner = partnerInput.value || "Sayangku";
   const spMsg = specialMsgInput.value || "";
-  const success = state.score >= 20; // fixed threshold, hidden
+  const success = state.score >= THRESHOLD;
   endTitle.textContent = success ? `Kamu hebat, ${partner}! 🎉` : "Waktu Habis! ⏰";
   endText.textContent = success ? spMsg : `${partner}, kamu dapat ${state.score} poin. Yuk coba lagi!`;
   endOverlay.classList.remove("hidden");
@@ -262,7 +265,7 @@ function end(){
 function spawn(){
   const isHeart = Math.random() < HEART_RATIO;
   const size = (isHeart ? 26 : 24) + Math.random()*12;
-  const speed = BASE_SPEED + Math.random()*1.4 + Math.min(state.score*SPEED_SCALE, 1.6);
+  const speed = BASE_SPEED + Math.random()*1.6 + Math.min(state.score*SPEED_SCALE, 1.8);
   state.objects.push({
     type: isHeart ? "heart" : "bomb",
     x: 40 + Math.random()*(canvas.width-80),
@@ -277,21 +280,17 @@ function loop(ts){
   const dt = Math.min(32, ts - lastTs);
   lastTs = ts;
 
-  // spawn faster over time
-  if (Math.random() < SPAWN_BASE + Math.min(state.score*SPAWN_SCALE, 0.02)) spawn();
+  if (Math.random() < SPAWN_BASE + Math.min(state.score*SPAWN_SCALE, 0.024)) spawn();
 
-  // update objects
   state.objects.forEach(o=>{
     o.y += o.speed;
     o.x += Math.sin(ts/500 + o.phase) * 0.7;
   });
   state.objects = state.objects.filter(o=> o.y < canvas.height + 50);
 
-  // update particles
   state.particles.forEach(p=>{ p.y -= 0.6; p.life -= dt; });
   state.particles = state.particles.filter(p=> p.life > 0);
 
-  // tick per second
   if (Math.floor(ts/1000) !== Math.floor((ts-dt)/1000)) {
     state.time--;
     timeBadge.textContent = `Waktu: ${state.time}s`;
@@ -308,14 +307,10 @@ function loop(ts){
    ========================= */
 function render(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  // objects
   for(const o of state.objects){
     if (o.type==="heart") drawHeart(o.x,o.y,o.size);
     else drawBomb(o.x,o.y,o.size);
   }
-
-  // particles
   ctx.save();
   ctx.fillStyle = "#e11d48";
   ctx.font = "bold 18px system-ui, -apple-system, Segoe UI, Roboto";
@@ -327,7 +322,6 @@ function render(){
   ctx.globalAlpha = 1;
   ctx.restore();
 }
-
 function drawHeart(x,y,size){
   ctx.save(); ctx.translate(x,y); ctx.fillStyle = "#f43f5e";
   const s = size/24;
@@ -349,43 +343,62 @@ function drawBomb(x,y,size){
 }
 
 /* =========================
-   INPUT — TAP TO HIT OBJECTS
+   TAP INPUT — FAST & ASSISTED
    ========================= */
-function canvasPoint(e){
+function toCanvasPoint(e){
   const rect = canvas.getBoundingClientRect();
   const x = (e.clientX - rect.left) * (canvas.width/rect.width);
   const y = (e.clientY - rect.top) * (canvas.height/rect.height);
-  return {x,y};
+  return {x,y, rectW: rect.width};
 }
-canvas.addEventListener("pointerdown", async (e)=>{
-  await unlockAudio();
+canvas.addEventListener("pointerdown", (e)=>{
   if (!state.running) return;
-  const p = canvasPoint(e);
+  unlockAudio(); // non-blocking
+  const p = toCanvasPoint(e);
 
-  // find topmost object under pointer (iterate from end)
+  // 1) precise hit (prefer heart)
+  let hitIndex = -1, hitType = null;
   for (let i = state.objects.length - 1; i >= 0; i--) {
     const o = state.objects[i];
-    if (hitPointObject(p, o)){
-      if (o.type === "heart"){
-        state.score++;
-        navigator.vibrate?.(10);
-        beep(880,0.06,"sine",0.08);
-        state.particles.push({ x:o.x, y:o.y, text:"+1", life:600 });
-      } else {
-        state.score = Math.max(0, state.score - 2);
-        navigator.vibrate?.([24,28,24]);
-        boom();
-        state.particles.push({ x:o.x, y:o.y, text:"-2", life:600 });
-      }
-      scoreBadge.textContent = "Skor: " + state.score;
-      state.objects.splice(i,1);
-      break;
+    if (hitPointObject(p, o, HIT_RADIUS_SCALE)){
+      if (o.type === "heart") { hitIndex = i; hitType = "heart"; break; }
+      else if (hitIndex === -1) { hitIndex = i; hitType = "bomb"; }
     }
+  }
+  // 2) aim assist to nearest heart
+  if (hitIndex === -1){
+    const maxCanvasDist = AIM_ASSIST_PX * (canvas.width / p.rectW);
+    let bestI = -1, bestD2 = maxCanvasDist*maxCanvasDist;
+    for (let i = state.objects.length - 1; i >= 0; i--) {
+      const o = state.objects[i];
+      if (o.type !== "heart") continue;
+      const dx = p.x - o.x, dy = p.y - o.y;
+      const d2 = dx*dx + dy*dy;
+      if (d2 < bestD2){ bestD2 = d2; bestI = i; }
+    }
+    if (bestI !== -1){ hitIndex = bestI; hitType = "heart"; }
+  }
+
+  if (hitIndex !== -1){
+    const o = state.objects[hitIndex];
+    if (hitType === "heart"){
+      state.score++;
+      navigator.vibrate?.(10);
+      beep(880,0.05,"sine",0.08);
+      state.particles.push({ x:o.x, y:o.y, text:"+1", life:600 });
+    } else {
+      state.score = Math.max(0, state.score - 2);
+      navigator.vibrate?.([24,28,24]);
+      boom();
+      state.particles.push({ x:o.x, y:o.y, text:"-2", life:600 });
+    }
+    scoreBadge.textContent = "Skor: " + state.score;
+    state.objects.splice(hitIndex,1);
   }
 }, { passive:true });
 
-function hitPointObject(p, o){
-  const r = o.size * 0.55;
+function hitPointObject(p, o, scale){
+  const r = o.size * scale;
   const dx = p.x - o.x;
   const dy = p.y - o.y;
   return (dx*dx + dy*dy) <= r*r;
@@ -394,16 +407,10 @@ function hitPointObject(p, o){
 /* =========================
    BUTTONS
    ========================= */
-startBtn.addEventListener("click", async ()=>{
-  await unlockAudio();
-  start();
-});
-playAgain.addEventListener("click", async ()=>{
-  await unlockAudio();
-  start();
-});
-muteBtn.addEventListener("click", async ()=>{
-  await unlockAudio();
+startBtn.addEventListener("click", ()=>{ start(); });
+playAgain.addEventListener("click", ()=>{ start(); });
+muteBtn.addEventListener("click", ()=>{
+  unlockAudio();
   soundMuted = !soundMuted;
   muteBtn.textContent = soundMuted ? "Sound: OFF 🔇" : "Sound: ON 🔊";
   muteBtn.style.background = soundMuted ? "#9a6d78" : "#7c3042";
