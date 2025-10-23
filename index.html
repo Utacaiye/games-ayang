@@ -6,365 +6,162 @@
 <meta name="theme-color" content="#e11d48" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<title>Love Lanes — Lane Tap v2 💘</title>
-<meta name="description" content="Tap-lane game: ketuk lajur yang benar untuk menangkap hati, hindari bom. Android & iPhone ready.">
-
+<title>Love Lanes — Lane Tap v6 💘</title>
+<meta name="description" content="Tap-lane ponsel: ketuk lajur dekat posisi hati. Anti-salah kena bom (heart-first), 3/4 lajur, training mode, konfeti, sparkle, leaderboard.">
 <style>
   :root{ --rose:#e11d48; --ink:#7f102a; --hl: rgba(225,29,72,.09); }
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{
-    margin:0;
-    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Arial, 'Apple Color Emoji','Segoe UI Emoji';
-    color:#5b0b1f;
-    background: linear-gradient(180deg,#ffe4ea,#ffd9e1 45%,#ffd1da);
-    min-height:100svh;
-    display:flex;align-items:center;justify-content:center;
-    padding-bottom:env(safe-area-inset-bottom);
-  }
+  body{ margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Arial, 'Apple Color Emoji','Segoe UI Emoji';
+    color:#5b0b1f; background: linear-gradient(180deg,#ffe4ea,#ffd9e1 45%,#ffd1da); min-height:100svh;
+    display:flex;align-items:center;justify-content:center; padding-bottom:env(safe-area-inset-bottom); }
   .app{width:min(960px,100%);padding:16px}
   .card{background: rgba(255,255,255,.75); backdrop-filter: blur(6px); border-radius: 18px; padding:16px; box-shadow: 0 10px 30px rgba(225,29,72,.15)}
   h1{margin:0 0 4px;font-weight:800;color:var(--ink)}
   .muted{color:#7c3042}
-
   .btn{border:none; background:var(--rose); color:white; border-radius:14px; padding:12px 16px; font-weight:700; cursor:pointer; box-shadow:0 10px 16px rgba(225,29,72,.25)}
-  .btn:hover{filter:brightness(.98)}
-  .btn:active{transform:translateY(1px)}
-
+  .btn:hover{filter:brightness(.98)} .btn:active{transform:translateY(1px)}
   .hud{display:flex;gap:8px; align-items:center; justify-content:space-between; font-weight:700}
   .badge{background:#ffe3ea; color:#7f102a; padding:6px 10px; border-radius:999px; box-shadow: 0 2px 6px rgba(225,29,72,.12)}
   .badge.strong{background:#e11d48; color:white}
-
   .stage{position:relative;overflow:hidden;border-radius:16px; box-shadow: inset 0 0 0 1px rgba(225,29,72,.08); background:linear-gradient(180deg,#fff,#ffe9ee); height:60vh; min-height:420px}
-  .lanes{position:absolute; inset:0; display:grid; grid-template-columns:repeat(3,1fr);}
+  .lanes{position:absolute; inset:0; display:grid; grid-template-columns:repeat(3,1fr); transition:grid-template-columns .2s ease}
   .laneTap{ -webkit-tap-highlight-color: transparent; touch-action:none; transition: background .12s ease }
   .laneTap button{height:100%; width:100%; background:transparent; border:none; outline:none; padding:0; margin:0; -webkit-tap-highlight-color: transparent;}
-  .laneTap:active{background:rgba(225,29,72,.05)}
-  .laneHL{background: var(--hl) !important;}
+  .laneTap:active{background:rgba(225,29,72,.05)} .laneHL{background: var(--hl) !important;}
   .laneDivider{position:absolute; top:0; bottom:0; width:2px; background:rgba(225,29,72,.08)}
-
   .obj{position:absolute; left:0; top:0; transform:translate(-50%,-50%); will-change:transform; pointer-events:none}
-  .heart{color:#f43f5e; filter: drop-shadow(0 2px 6px rgba(225,29,72,.2));}
-  .bomb{color:#111827;}
-
-  .overlay{position:absolute; inset:0; display:grid; place-items:center; background:rgba(255,255,255,.7)}
-  .hidden{display:none !important}
-  .footer{margin-top:8px; text-align:center; color:#7c3042}
-  svg{display:block}
+  .heart{color:#f43f5e; filter: drop-shadow(0 2px 6px rgba(225,29,72,.2));} .bomb{color:#111827;}
+  .tapLine{position:absolute; left:0; right:0; height:2px; background:rgba(225,29,72,.25); transform:translateY(-1px); pointer-events:none; opacity:0; transition:opacity .12s}
+  .tapLine.show{opacity:1}
+  .overlay{position:absolute; inset:0; display:grid; place-items:center; background:rgba(255,255,255,.7)} .hidden{display:none !important}
+  .footer{margin-top:8px; text-align:center; color:#7c3042} svg{display:block}
+  .config-grid{display:grid; gap:12px} @media(min-width:720px){ .config-grid{grid-template-columns:1fr 1fr 1fr} }
+  select.input, input.input{border:1px solid #f8bac6;border-radius:12px;padding:10px 12px;outline:none;width:100%}
+  .input:focus{border-color:#fb7185; box-shadow:0 0 0 3px rgba(251,113,133,.25)}
+  table{width:100%; border-collapse:collapse; font-size:14px} th,td{padding:6px 8px; text-align:left}
+  tr+tr td, tr+tr th{border-top:1px solid rgba(225,29,72,.15)} th{color:#7c3042}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="card" style="margin-bottom:12px">
     <h1>Love Lanes 💝</h1>
-    <div class="muted">Mode <b>tap-lane</b> 3 lajur: ketuk lajurnya saja. Lebih responsif & target lebih besar.</div>
+    <div class="muted">Tap-lane ponsel: pilih 3/4 lajur. <b>Heart-first</b> anti false hit.</div>
   </div>
-
   <div id="config" class="card" style="margin-bottom:12px">
-    <div style="display:grid; gap:12px">
-      <label>Nama pasangan
-        <input id="partnerName" class="input" style="border:1px solid #f8bac6;border-radius:12px;padding:10px 12px;outline:none;width:100%" placeholder="Dinda / Ayang / Sayang" value="Sayangku">
+    <div class="config-grid">
+      <label>Nama pasangan <input id="partnerName" class="input" value="Sayangku"></label>
+      <label>Pesan spesial <input id="specialMsg" class="input" value="Kamu selalu jadi alasanku tersenyum. I love you!"></label>
+      <label>Durasi (detik) <input id="duration" class="input" type="number" min="10" value="30"></label>
+      <label>Mode lajur
+        <select id="laneMode" class="input"><option value="3" selected>3 Lajur</option><option value="4">4 Lajur</option></select>
       </label>
-      <label>Pesan spesial (muncul saat sukses)
-        <input id="specialMsg" class="input" style="border:1px solid #f8bac6;border-radius:12px;padding:10px 12px;outline:none;width:100%" placeholder="Pesan romantis..." value="Kamu selalu jadi alasanku tersenyum. I love you!">
+      <label>Training mode
+        <select id="trainingMode" class="input"><option value="off" selected>OFF</option><option value="on">ON</option></select>
       </label>
-      <label>Durasi (detik)
-        <input id="duration" class="input" style="border:1px solid #f8bac6;border-radius:12px;padding:10px 12px;outline:none;width:100%" type="number" min="10" value="30">
-      </label>
+      <div><button id="startBtn" class="btn">Mulai! 💘</button> <button id="muteBtn" class="btn" style="background:#7c3042; margin-left:8px">Sound: ON 🔊</button></div>
     </div>
-    <div style="margin-top:10px; display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap">
-      <div style="display:flex; gap:8px; align-items:center">
-        <button id="startBtn" class="btn">Mulai! 💘</button>
-        <button id="muteBtn" class="btn" style="background:#7c3042">Sound: ON 🔊</button>
-      </div>
-      <small class="muted">Kontrol: ketuk lajur yang ada ❤-nya (teratas). Ketuk saat bom di teratas lajur = −2.</small>
-    </div>
+    <small class="muted" style="display:block; margin-top:8px">Ketuk setinggi ❤ untuk akurasi maksimal.</small>
   </div>
-
   <div class="card stage" id="stage">
     <div class="hud" style="position:absolute; left:12px; right:12px; top:8px; z-index:10">
-      <span class="badge strong" id="scoreBadge">Skor: 0</span>
-      <span class="badge" id="timeBadge">Waktu: 30s</span>
-      <span class="badge" id="bestBadge">Best: 0</span>
+      <span class="badge strong" id="scoreBadge">Skor: 0</span><span class="badge" id="timeBadge">Waktu: 30s</span><span class="badge" id="bestBadge">Best: 0</span>
     </div>
-
-    <!-- falling objects container -->
+    <div id="tapLine" class="tapLine"></div>
     <div id="objs" style="position:absolute; inset:0;"></div>
-
-    <!-- lane tap areas -->
-    <div class="lanes">
-      <div class="laneTap"><button data-lane="0" aria-label="lane 1"></button></div>
-      <div class="laneTap"><button data-lane="1" aria-label="lane 2"></button></div>
-      <div class="laneTap"><button data-lane="2" aria-label="lane 3"></button></div>
-    </div>
-
-    <!-- vertical dividers -->
-    <div class="laneDivider" style="left:33.3333%"></div>
-    <div class="laneDivider" style="left:66.6666%"></div>
-
-    <!-- end overlay -->
+    <div id="lanes" class="lanes"></div>
+    <div id="dividers"></div>
+    <canvas id="confetti" style="position:absolute; inset:0; pointer-events:none;"></canvas>
+    <canvas id="sparkle" style="position:absolute; inset:0; pointer-events:none;"></canvas>
     <div id="endOverlay" class="overlay hidden">
-      <div class="card" style="text-align:center; padding:24px; max-width:480px">
+      <div class="card" style="text-align:center; padding:24px; max-width:560px">
         <div id="endTitle" style="font-size:22px; font-weight:800; margin-bottom:8px">Waktu Habis!</div>
         <div id="endText" class="muted" style="margin-bottom:12px"></div>
-        <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:12px">
+        <div style="margin:16px 0; text-align:left">
+          <div style="font-weight:800; color:#7c3042; margin-bottom:6px">🏆 Leaderboard (Top 5)</div>
+          <div id="boardWrap"></div>
+        </div>
+        <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:10px">
           <button id="shareWA" class="btn" style="background:#16a34a">Share WhatsApp 📤</button>
           <button id="playAgain" class="btn">Main Lagi 💞</button>
         </div>
       </div>
     </div>
   </div>
-
   <div class="footer">Tip: Add to Home Screen (iOS/Android) untuk pengalaman mirip aplikasi.</div>
 </div>
-
 <script>
-/* ====== CONFIG ====== */
-const THRESHOLD = 20;     // sukses minimal (disembunyikan)
-const LANES = 3;
-const HEART_RATIO = 0.62; // lebih banyak hati
-const BASE_SPEED = 130;   // px/detik
-const SPEED_SCALE = 2.2;  // bertambah per skor
-const SPAWN_BASE = 560;   // ms (akan diperkecil seiring skor)
-const SPAWN_MIN = 280;    // ms minimum
-const PENALTY = 2;
-
-/* ====== DOM ====== */
-const $ = (s)=>document.querySelector(s);
-const $$ = (s)=>document.querySelectorAll(s);
-const stage = $("#stage");
-const objsEl = $("#objs");
-const scoreBadge = $("#scoreBadge");
-const timeBadge = $("#timeBadge");
-const bestBadge = $("#bestBadge");
-const startBtn = $("#startBtn");
-const playAgain = $("#playAgain");
-const shareBtn = $("#shareWA");
-const muteBtn = $("#muteBtn");
-const endOverlay = $("#endOverlay");
-const endTitle = $("#endTitle");
-const endText = $("#endText");
-const partnerInput = $("#partnerName");
-const msgInput = $("#specialMsg");
-const durInput = $("#duration");
-const laneEls = Array.from(document.querySelectorAll(".lanes .laneTap"));
-
-/* ====== STORAGE ====== */
-const store = {
-  get best(){ try{ return Number(localStorage.getItem('loveLaneBestV2')||0) }catch{ return 0 } },
-  set best(v){ try{ localStorage.setItem('loveLaneBestV2', v) }catch{} }
-};
-bestBadge.textContent = "Best: " + store.best;
-
-/* ====== AUDIO (gesture unlocked) ====== */
-let audioCtx=null, muted=false;
-function ensureAudio(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }
-async function unlockAudio(){ ensureAudio(); try{ if(audioCtx.state==='suspended') await audioCtx.resume(); }catch{} }
-function tone(freq=880, dur=0.06, type='sine', gain=0.12){
-  if(muted) return;
-  ensureAudio();
-  const o = audioCtx.createOscillator(); o.type=type; o.frequency.value=freq;
-  const g = audioCtx.createGain(); g.gain.value=gain;
-  o.connect(g).connect(audioCtx.destination);
-  o.start(); o.stop(audioCtx.currentTime+dur);
+const THRESHOLD=20, BASE_SPEED=130, SPEED_SCALE=2.2, SPAWN_BASE=560, SPAWN_MIN=280, PENALTY=2;
+const TAP_WINDOW=110, HEART_BIAS=-48, BELOW_TAP_BONUS=-24, ABOVE_TAP_PENALTY=22, HARD_BELOW_RULE_PAD=18;
+const $=(s)=>document.querySelector(s);
+const stage=$("#stage"), tapLine=$("#tapLine"), objsEl=$("#objs"), lanesWrap=$("#lanes"), dividersWrap=$("#dividers");
+const scoreBadge=$("#scoreBadge"), timeBadge=$("#timeBadge"), bestBadge=$("#bestBadge");
+const startBtn=$("#startBtn"), playAgain=$("#playAgain"), shareBtn=$("#shareWA"), muteBtn=$("#muteBtn");
+const endOverlay=$("#endOverlay"), endTitle=$("#endTitle"), endText=$("#endText");
+const partnerInput=$("#partnerName"), msgInput=$("#specialMsg"), durInput=$("#duration"), laneMode=$("#laneMode"), trainingMode=$("#trainingMode");
+const confettiCanvas=$("#confetti"), cctx=confettiCanvas.getContext('2d');
+const sparkleCanvas=$("#sparkle"), sctx=sparkleCanvas.getContext('2d');
+function fitCanvas(el,ctx){const dpr=Math.min(2,window.devicePixelRatio||1);const r=el.getBoundingClientRect(); el.width=r.width*dpr; el.height=r.height*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);}
+new ResizeObserver(()=>{fitCanvas(confettiCanvas,cctx);fitCanvas(sparkleCanvas,sctx);}).observe(stage); fitCanvas(confettiCanvas,cctx);fitCanvas(sparkleCanvas,sctx);
+const store={get best(){try{return Number(localStorage.getItem('bestV6')||0)}catch{return 0}},set best(v){try{localStorage.setItem('bestV6',v)}catch{}},
+             get board(){try{return JSON.parse(localStorage.getItem('boardV6')||'[]')}catch{return []}},set board(a){try{localStorage.setItem('boardV6',JSON.stringify(a))}catch{}}};
+bestBadge.textContent="Best: "+store.best;
+let audioCtx=null, muted=false; function ensureAudio(){if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)()}
+async function unlockAudio(){ensureAudio(); try{if(audioCtx.state==='suspended') await audioCtx.resume()}catch{}}
+function tone(f=880,d=0.06,t='sine',g=0.12){if(muted) return; ensureAudio(); const o=audioCtx.createOscillator(); const gg=audioCtx.createGain(); o.type=t;o.frequency.value=f; gg.gain.value=g; o.connect(gg).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+d);}
+function successChord(){if(muted) return; ensureAudio(); const freqs=[523,659,784],now=audioCtx.currentTime; freqs.forEach((f,i)=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(.12,now+.02);g.gain.exponentialRampToValueAtTime(.0001,now+.35+i*.02);o.connect(g).connect(audioCtx.destination);o.start(now+i*.02);o.stop(now+.4+i*.02);});}
+function boom(){if(muted) return; ensureAudio(); const n=2*audioCtx.sampleRate,buf=audioCtx.createBuffer(1,n,audioCtx.sampleRate),out=buf.getChannelData(0); for(let i=0;i<n;i++) out[i]=Math.random()*2-1; const src=audioCtx.createBufferSource(); src.buffer=buf; const filter=audioCtx.createBiquadFilter(); filter.type='lowpass'; filter.frequency.value=220; const g=audioCtx.createGain(); g.gain.value=.22; src.connect(filter).connect(g).connect(audioCtx.destination); src.start(); src.stop(audioCtx.currentTime+.2);}
+let LANES=3, laneEls=[], state={running:false,time:30,score:0,spawnTimer:0,lastTs:0,objects:[]}, idSeq=0;
+function reset(){state.running=true; state.time=+durInput.value||30; state.score=0; state.spawnTimer=0; state.lastTs=performance.now(); state.objects=[]; objsEl.innerHTML=''; scoreBadge.textContent='Skor: 0'; timeBadge.textContent=`Waktu: ${state.time}s`; endOverlay.classList.add('hidden');}
+function buildLanes(n){LANES=n; lanesWrap.innerHTML=''; dividersWrap.innerHTML=''; lanesWrap.style.gridTemplateColumns=`repeat(${n},1fr)`; for(let i=0;i<n;i++){const l=document.createElement('div'); l.className='laneTap'; const b=document.createElement('button'); b.dataset.lane=String(i); b.ariaLabel='lane '+(i+1); l.appendChild(b); lanesWrap.appendChild(l);} for(let i=1;i<n;i++){const d=document.createElement('div'); d.className='laneDivider'; d.style.left=(100*(i/n))+'%'; dividersWrap.appendChild(d);} laneEls=Array.from(document.querySelectorAll('.laneTap')); bindLaneHandlers(); updateHighlights();}
+function heartRatio(){return (trainingMode.value==='on')?1.0:0.62}
+function spawn(){const lane=Math.floor(Math.random()*LANES); const type=Math.random()<heartRatio()?'heart':'bomb'; const size=48+Math.random()*12; const speed=BASE_SPEED+Math.min(state.score*SPEED_SCALE,220); const id=++idSeq; state.objects.push({id,lane,y:-size,type,size,speed}); const xPct=(lane+.5)*(100/LANES); const el=document.createElement('div'); el.className='obj '+type; el.dataset.id=String(id); el.style.left=xPct+'%'; el.style.top=(-size)+'px'; el.innerHTML= type==='heart'?heartSVG(size):bombSVG(size); objsEl.appendChild(el);}
+function removeObj(id){const i=state.objects.findIndex(o=>o.id===id); if(i>=0) state.objects.splice(i,1); const el=objsEl.querySelector(`[data-id="${id}"]`); if(el) el.remove();}
+function topmostInLane(l){let t=null; for(const o of state.objects){if(o.lane===l){ if(!t||o.y>t.y) t=o; }} return t;}
+function laneTapPick(l, clientY){const r=stage.getBoundingClientRect(); const tapY=clientY-r.top; const cand=state.objects.filter(o=>o.lane===l && Math.abs(o.y-tapY)<=TAP_WINDOW); if(!cand.length) return topmostInLane(l);
+  const heartBelow=cand.filter(o=>o.type==='heart' && o.y>=tapY-HARD_BELOW_RULE_PAD).sort((a,b)=>Math.abs(a.y-tapY)-Math.abs(b.y-tapY)); if(heartBelow.length) return heartBelow[0];
+  let best=null, bestScore=Infinity; for(const o of cand){ let score=Math.abs(o.y-tapY); if(o.type==='heart') score+=HEART_BIAS; if(o.type==='heart' && o.y>=tapY) score+=BELOW_TAP_BONUS; if(o.type==='bomb' && o.y<tapY) score+=ABOVE_TAP_PENALTY; if(score<bestScore){bestScore=score; best=o;} }
+  if(best && best.type==='bomb'){ const nh=cand.filter(o=>o.type==='heart').sort((a,b)=>Math.abs(a.y-tapY)-Math.abs(b.y-tapY))[0]; if(nh){const dh=Math.abs(nh.y-tapY), db=Math.abs(best.y-tapY); if(dh<=db+28) return nh;} }
+  return best||topmostInLane(l);
 }
-function successChord(){
-  if(muted) return; ensureAudio();
-  const freqs=[523,659,784], now=audioCtx.currentTime;
-  freqs.forEach((f,i)=>{ const o=audioCtx.createOscillator(), g=audioCtx.createGain();
-    o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(0.0001,now);
-    g.gain.exponentialRampToValueAtTime(0.12, now+0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, now+0.35+i*0.02);
-    o.connect(g).connect(audioCtx.destination); o.start(now+i*0.02); o.stop(now+0.4+i*0.02);
-  });
-}
-function boom(){
-  if(muted) return; ensureAudio();
-  const bufferSize=2*audioCtx.sampleRate, noise=audioCtx.createBuffer(1,bufferSize,audioCtx.sampleRate);
-  const out=noise.getChannelData(0); for(let i=0;i<bufferSize;i++) out[i]=Math.random()*2-1;
-  const src=audioCtx.createBufferSource(); src.buffer=noise;
-  const filter=audioCtx.createBiquadFilter(); filter.type='lowpass'; filter.frequency.value=220;
-  const g=audioCtx.createGain(); g.gain.value=0.22;
-  src.connect(filter).connect(g).connect(audioCtx.destination);
-  src.start(); src.stop(audioCtx.currentTime+0.2);
-}
-
-/* ====== STATE ====== */
-let state = {
-  running:false, time:30, score:0, spawnTimer:0, lastTs:0,
-  objects:[] // {id, lane, y(px), type:'heart'|'bomb', size(px), speed(px/s)}
-};
-let idSeq=0;
-function reset(){
-  state.running=true;
-  state.time=+durInput.value||30;
-  state.score=0;
-  state.spawnTimer=0;
-  state.lastTs=performance.now();
-  state.objects=[];
-  objsEl.innerHTML='';
-  scoreBadge.textContent='Skor: 0';
-  timeBadge.textContent=`Waktu: ${state.time}s`;
-  endOverlay.classList.add('hidden');
-}
-
-/* ====== OBJECTS ====== */
-function spawn(){
-  const lane = Math.floor(Math.random()*LANES);
-  const type = Math.random()<HEART_RATIO ? 'heart':'bomb';
-  const size = 48 + Math.random()*12; // px
-  const speed = BASE_SPEED + Math.min(state.score* SPEED_SCALE, 220); // px/s
-  const id = ++idSeq;
-  state.objects.push({id,lane,y:-size,type,size,speed});
-  const xPct = (lane + 0.5) * (100/LANES);
-  const el = document.createElement('div');
-  el.className='obj '+type;
-  el.dataset.id=String(id);
-  el.style.left = xPct + '%';
-  el.style.top = (-size) + 'px';
-  el.innerHTML = type==='heart' ? heartSVG(size) : bombSVG(size);
-  objsEl.appendChild(el);
-}
-function removeObj(id){
-  const i = state.objects.findIndex(o=>o.id===id);
-  if (i>=0){ state.objects.splice(i,1); }
-  const el = objsEl.querySelector(`[data-id="${id}"]`);
-  if (el) el.remove();
-}
-function topmostInLane(lane){
-  let top=null;
-  for(const o of state.objects){ if(o.lane===lane){ if(!top || o.y>top.y) top=o; } }
-  return top;
-}
-
-/* ====== HIGHLIGHT LANE ====== */
-function updateHighlights(){
-  // lane highlight kalau topmost object di lane adalah heart
-  laneEls.forEach((laneEl, idx)=>{
-    const top = topmostInLane(idx);
-    if (top && top.type === 'heart') laneEl.classList.add('laneHL');
-    else laneEl.classList.remove('laneHL');
-  });
-}
-
-/* ====== LOOP ====== */
-function loop(ts){
-  if(!state.running) return;
-  const dt = Math.min(50, ts - state.lastTs); // ms
-  state.lastTs = ts;
-
-  const spawnInterval = Math.max(SPAWN_MIN, SPAWN_BASE - state.score*10);
-  state.spawnTimer += dt;
-  if (state.spawnTimer >= spawnInterval){
-    state.spawnTimer = 0;
-    spawn();
-  }
-
-  const h = stage.clientHeight;
-  for(const o of state.objects){
-    o.y += (o.speed * (dt/1000));
-    const el = objsEl.querySelector(`[data-id="${o.id}"]`);
-    if (el) el.style.top = o.y + 'px';
-  }
-  for(const o of [...state.objects]) if (o.y > h + o.size*0.6) removeObj(o.id);
-
+function updateHighlights(){laneEls.forEach((le,idx)=>{const t=topmostInLane(idx); if(t&&t.type==='heart') le.classList.add('laneHL'); else le.classList.remove('laneHL');});}
+function loop(ts){if(!state.running) return; const dt=Math.min(50, ts-state.lastTs); state.lastTs=ts; const spawnInterval=Math.max(SPAWN_MIN, SPAWN_BASE-state.score*10); state.spawnTimer+=dt; if(state.spawnTimer>=spawnInterval){state.spawnTimer=0; spawn();}
+  const h=stage.clientHeight; for(const o of state.objects){o.y += (o.speed*(dt/1000)); const el=objsEl.querySelector(`[data-id="${o.id}"]`); if(el) el.style.top=o.y+'px';}
+  for(const o of [...state.objects]) if(o.y>h+o.size*.6) removeObj(o.id);
   updateHighlights();
-
-  if (Math.floor(ts/1000)!==Math.floor((ts-dt)/1000)){
-    state.time--;
-    timeBadge.textContent=`Waktu: ${state.time}s`;
-    if (state.time<=5 && state.time>0) tone(900,0.05,'square',0.06);
-    if (state.time<=0){ end(); return; }
-  }
-
+  if(Math.floor(ts/1000)!==Math.floor((ts-dt)/1000)){state.time--; timeBadge.textContent=`Waktu: ${state.time}s`; if(state.time<=0){end(); return;}}
   requestAnimationFrame(loop);
 }
-function end(){
-  state.running=false;
-  updateHighlights();
-  const partner = partnerInput.value || 'Sayangku';
-  const msg = msgInput.value || '';
-  const success = state.score >= THRESHOLD;
-  endTitle.textContent = success ? `Kamu hebat, ${partner}! 🎉` : 'Waktu Habis! ⏰';
-  endText.textContent = success ? msg : `${partner}, kamu dapat ${state.score} poin. Yuk coba lagi!`;
-  endOverlay.classList.remove('hidden');
-  if (success) successChord(); else tone(400,0.2,'sine',0.08);
-  if (state.score > store.best){ store.best = state.score; }
-  bestBadge.textContent = 'Best: ' + store.best;
+function end(){state.running=false; updateHighlights(); const partner=partnerInput.value||'Sayangku'; const msg=msgInput.value||''; const success=state.score>=THRESHOLD;
+  endTitle.textContent= success?`Kamu hebat, ${partner}! 🎉`:'Waktu Habis! ⏰'; endText.textContent= success?msg:`${partner}, kamu dapat ${state.score} poin. Yuk coba lagi!`; endOverlay.classList.remove('hidden');
+  if(success){successChord(); fireConfetti();} else {tone(400,0.2,'sine',0.08);} if(state.score>store.best){store.best=state.score} bestBadge.textContent='Best: '+store.best;
+  const item={score:state.score,lanes:LANES,training:trainingMode.value==='on',at:new Date().toISOString()}; const board=store.board; board.push(item); board.sort((a,b)=> b.score-a.score || (a.training===b.training?0:(a.training?1:-1))); store.board=board.slice(0,5); renderBoard(store.board);
 }
-
-/* ====== INPUT ====== */
-laneEls.forEach((laneEl, idx)=>{
-  laneEl.querySelector('button').addEventListener('pointerdown', (e)=>{
-    if (!state.running) return;
-    unlockAudio(); // non-blocking
-    const top = topmostInLane(idx);
-    if (!top) return;
-    if (top.type==='heart'){
-      state.score++; scoreBadge.textContent='Skor: '+state.score;
-      navigator.vibrate?.(10); tone(880,0.05,'sine',0.08); popFx(top);
-    } else {
-      state.score = Math.max(0, state.score-PENALTY); scoreBadge.textContent='Skor: '+state.score;
-      navigator.vibrate?.([24,28,24]); boom(); popFx(top, true);
-    }
-    removeObj(top.id);
-    updateHighlights();
-  }, { passive:true });
-});
-
-/* ====== SHARE WHATSAPP ====== */
-shareBtn.addEventListener('click', ()=>{
-  const partner = partnerInput.value || 'Sayangku';
-  const url = location.href;
-  const text = `Aku baru main Love Lanes bareng ${partner} dan skorku ${state.score} 💖 Coba juga ya! ${url}`;
-  const wa = 'https://wa.me/?text=' + encodeURIComponent(text);
-  window.open(wa, '_blank');
-});
-
-/* ====== FX ====== */
-function popFx(o, isBomb=false){
-  const el = document.createElement('div');
-  el.style.position='absolute';
-  el.style.left = ((o.lane + 0.5) * (100/LANES)) + '%';
-  el.style.top = o.y + 'px';
-  el.style.transform='translate(-50%,-50%)';
-  el.style.pointerEvents='none';
-  el.style.font='bold 18px system-ui,-apple-system,Segoe UI,Roboto';
-  el.style.color = isBomb ? '#111827' : '#e11d48';
-  el.style.textShadow='0 1px 0 rgba(0,0,0,.06)';
-  el.textContent = isBomb? '-2' : '+1';
-  el.style.transition='transform .5s ease, opacity .5s ease';
-  objsEl.appendChild(el);
-  requestAnimationFrame(()=>{
-    el.style.opacity='1';
-    el.style.transform='translate(-50%,-120%)';
-    el.style.opacity='0';
-  });
-  setTimeout(()=> el.remove(), 520);
-}
-
-/* ====== ICONS ====== */
-function heartSVG(size){
-  return `<svg class="heart" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-    <path d="M12 21s-7.5-4.438-10-8.25C.81 10.69 1.5 6.5 5 6.5c2.25 0 3.5 1.75 3.5 1.75S9.75 6.5 12 6.5c3.5 0 4.19 4.19 3 6.25C19.5 16.562 12 21 12 21z"/></svg>`;
-}
-function bombSVG(size){
-  return `<svg class="bomb" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-    <circle cx="12" cy="12" r="9"></circle>
-    <path d="M14 6c2-2 3.5-1 4.5 0" stroke="#7c3042" stroke-width="2" fill="none" />
-    <circle cx="19.5" cy="5" r="1.5" fill="#f59e0b"></circle>
-  </svg>`;
-}
-
-/* ====== BUTTONS ====== */
-startBtn.addEventListener('click', ()=>{ reset(); requestAnimationFrame(loop); });
-playAgain.addEventListener('click', ()=>{ reset(); requestAnimationFrame(loop); });
-muteBtn.addEventListener('click', ()=>{
-  unlockAudio();
-  muted = !muted;
-  muteBtn.textContent = muted ? 'Sound: OFF 🔇' : 'Sound: ON 🔊';
-  muteBtn.style.background = muted ? '#9a6d78' : '#7c3042';
-});
+function renderBoard(list){const wrap=document.getElementById('boardWrap'); if(!list.length){wrap.innerHTML='<div class="muted">Belum ada skor.</div>'; return;} let h='<table><thead><tr><th>#</th><th>Skor</th><th>Mode</th><th>Tanggal</th></tr></thead><tbody>'; list.forEach((it,i)=>{const m=`${it.lanes} lane${it.lanes>1?'s':''}${it.training?' • Training':''}`; h+=`<tr><td>${i+1}</td><td style="font-weight:800">${it.score}</td><td>${m}</td><td>${new Date(it.at).toLocaleString()}</td></tr>`;}); h+='</tbody></table>'; wrap.innerHTML=h;}
+function fireConfetti(){fitCanvas(confettiCanvas,cctx); const w=confettiCanvas.width,h=confettiCanvas.height; let burst=0; function launch(){const N=120,parts=[]; for(let i=0;i<N;i++){parts.push({x:Math.random()*w,y:-20-Math.random()*h*.3,vx:-1.2+Math.random()*2.4,vy:1.6+Math.random()*2.8,size:6+Math.random()*6,rot:Math.random()*Math.PI,vr:-.25+Math.random()*.5,color:i%5,life:1600+Math.random()*700});}
+  const colors=['#ef4444','#f59e0b','#10b981','#3b82f6','#a855f7']; let start=performance.now(); function step(t){const dt=Math.min(32,t-start); start=t; cctx.clearRect(0,0,w,h); let alive=false;
+    for(const p of parts){p.life-=dt; if(p.life<=0) continue; alive=true; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=.003*dt; p.rot+=p.vr*dt; cctx.save(); cctx.translate(p.x,p.y); cctx.rotate(p.rot); cctx.fillStyle=colors[p.color]; cctx.fillRect(-p.size/2,-p.size/2,p.size,p.size); cctx.restore();}
+    if(alive) requestAnimationFrame(step); else {cctx.clearRect(0,0,w,h); if(++burst<3) setTimeout(launch,150);} } requestAnimationFrame(t=>{start=t; step(t)}); } launch();}
+function sparkleAt(lane,y){fitCanvas(sparkleCanvas,sctx); const w=sparkleCanvas.width,x=(lane+.5)*(w/LANES),N=14,parts=[]; for(let i=0;i<N;i++){const a=(Math.PI*2)*(i/N); parts.push({x,y:y*(sparkleCanvas.height/stage.clientHeight),vx:Math.cos(a)*(0.12+Math.random()*0.25),vy:Math.sin(a)*(0.12+Math.random()*0.25),life:420+Math.random()*180,size:2+Math.random()*2});}
+  let start=performance.now(); function step(t){const dt=Math.min(32,t-start); start=t; sctx.clearRect(0,0,sparkleCanvas.width,sparkleCanvas.height); let alive=false; sctx.fillStyle='#e11d48';
+    for(const p of parts){p.life-=dt; if(p.life<=0) continue; alive=true; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=.0008*dt; sctx.globalAlpha=Math.max(0,p.life/600); sctx.fillRect(p.x,p.y,p.size,p.size); sctx.globalAlpha=1;}
+    if(alive) requestAnimationFrame(step); else sctx.clearRect(0,0,sparkleCanvas.width,sparkleCanvas.height);} requestAnimationFrame(t=>{start=t; step(t)});}
+let lastTapTime=0;
+function bindLaneHandlers(){laneEls.forEach((le,idx)=>{const btn=le.querySelector('button'); btn.onpointerdown=(e)=>{ if(!state.running) return; const now=performance.now(); if(now-lastTapTime<60) return; lastTapTime=now;
+  unlockAudio(); const pick=laneTapPick(idx,e.clientY); if(!pick) return;
+  const r=stage.getBoundingClientRect(); tapLine.style.top=(e.clientY-r.top)+'px'; tapLine.classList.add('show'); setTimeout(()=>tapLine.classList.remove('show'),90);
+  if(pick.type==='heart'){state.score++; scoreBadge.textContent='Skor: '+state.score; navigator.vibrate?.(10); tone(880,0.05,'sine',0.08); popFx(pick); sparkleAt(pick.lane,pick.y);} else {
+    if(trainingMode.value==='on'){popFx(pick,true);} else {state.score=Math.max(0,state.score-PENALTY); scoreBadge.textContent='Skor: '+state.score; navigator.vibrate?.([24,28,24]); boom(); popFx(pick,true);} }
+  removeObj(pick.id); updateHighlights(); }; }); }
+function popFx(o,isBomb=false){const el=document.createElement('div'); el.style.position='absolute'; el.style.left=((o.lane+.5)*(100/LANES))+'%'; el.style.top=o.y+'px'; el.style.transform='translate(-50%,-50%)'; el.style.pointerEvents='none'; el.style.font='bold 18px system-ui,-apple-system,Segoe UI,Roboto'; el.style.color=isBomb?'#111827':'#e11d48'; el.style.textShadow='0 1px 0 rgba(0,0,0,.06)'; el.textContent=isBomb?'-2':'+1'; el.style.transition='transform .5s ease, opacity .5s ease'; objsEl.appendChild(el); requestAnimationFrame(()=>{el.style.opacity='1'; el.style.transform='translate(-50%,-120%)'; el.style.opacity='0';}); setTimeout(()=>el.remove(),520);}
+function heartSVG(s){return `<svg class="heart" width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M12 21s-7.5-4.438-10-8.25C.81 10.69 1.5 6.5 5 6.5c2.25 0 3.5 1.75 3.5 1.75S9.75 6.5 12 6.5c3.5 0 4.19 4.19 3 6.25C19.5 16.562 12 21 12 21z"/></svg>`;}
+function bombSVG(s){return `<svg class="bomb" width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor" aria-hidden><circle cx="12" cy="12" r="9"></circle><path d="M14 6c2-2 3.5-1 4.5 0" stroke="#7c3042" stroke-width="2" fill="none" /><circle cx="19.5" cy="5" r="1.5" fill="#f59e0b"></circle></svg>`;}
+startBtn.addEventListener('click', ()=>{const n=Number(laneMode.value)||3; buildLanes(n); reset(); requestAnimationFrame(loop);});
+playAgain?.addEventListener('click', ()=>{const n=Number(laneMode.value)||3; buildLanes(n); reset(); requestAnimationFrame(loop);});
+muteBtn.addEventListener('click', ()=>{unlockAudio(); muted=!muted; muteBtn.textContent = muted ? 'Sound: OFF 🔇' : 'Sound: ON 🔊'; muteBtn.style.background = muted ? '#9a6d78' : '#7c3042';});
+shareBtn?.addEventListener('click', ()=>{const partner=partnerInput.value||'Sayangku'; const url=location.href; const text=`Aku baru main Love Lanes bareng ${partner} dan skorku ${state.score} 💖 Coba juga ya! ${url}`; window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');});
+buildLanes(3);
 </script>
 </body>
 </html>
