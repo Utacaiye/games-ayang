@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#e11d48" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<title>Love Lanes — Lane Tap v6.2 💘</title>
-<meta name="description" content="Tap-lane ponsel heart-first. Auto Performance Mode untuk device entry-level.">
+<title>Love Lanes — Lane Tap v6.3 💘</title>
+<meta name="description" content="Tap-lane ponsel heart-first. Performance Mode otomatis. Perbaikan visibilitas objek & start cepat.">
 <style>
   :root{ --rose:#e11d48; --ink:#7f102a; --hl: rgba(225,29,72,.09); }
   *{box-sizing:border-box}
@@ -35,19 +35,22 @@
   .badge.strong{background:#e11d48; color:white}
 
   .stage{position:relative;overflow:hidden;border-radius:16px; box-shadow: inset 0 0 0 1px rgba(225,29,72,.08); background:linear-gradient(180deg,#fff,#ffe9ee); height:60vh; min-height:420px}
-  .lanes{position:absolute; inset:0; display:grid; grid-template-columns:repeat(3,1fr); transition:grid-template-columns .2s ease}
+  .lanes{position:absolute; inset:0; display:grid; grid-template-columns:repeat(3,1fr); transition:grid-template-columns .2s ease; z-index:1}
   .laneTap{ -webkit-tap-highlight-color: transparent; touch-action:none; transition: background .12s ease }
   .laneTap button{height:100%; width:100%; background:transparent; border:none; outline:none; padding:0; margin:0; -webkit-tap-highlight-color: transparent;}
   .laneTap:active{background:rgba(225,29,72,.05)}
   .laneHL{background: var(--hl) !important;}
   .laneDivider{position:absolute; top:0; bottom:0; width:2px; background:rgba(225,29,72,.08)}
 
+  #objs{position:absolute; inset:0; z-index:2}
   .obj{position:absolute; left:0; top:0; transform:translate3d(-50%,-50%,0); will-change:transform; pointer-events:none}
   .heart{color:#f43f5e;}
   .bomb{color:#111827;}
 
-  .tapLine{position:absolute; left:0; right:0; height:2px; background:rgba(225,29,72,.25); transform:translateY(-1px); pointer-events:none; opacity:0; transition:opacity .12s}
+  .tapLine{position:absolute; left:0; right:0; height:2px; background:rgba(225,29,72,.25); transform:translateY(-1px); pointer-events:none; opacity:0; transition:opacity .12s; z-index:4}
   .tapLine.show{opacity:1}
+
+  #fx{position:absolute; inset:0; pointer-events:none; z-index:3}
 
   .overlay{position:absolute; inset:0; display:grid; place-items:center; background:rgba(255,255,255,.7)}
   .hidden{display:none !important}
@@ -115,11 +118,11 @@
     </div>
 
     <div id="tapLine" class="tapLine"></div>
-    <div id="objs" style="position:absolute; inset:0;"></div>
+    <div id="objs"></div>
     <div id="lanes" class="lanes"></div>
     <div id="dividers"></div>
 
-    <canvas id="fx" style="position:absolute; inset:0; pointer-events:none;"></canvas>
+    <canvas id="fx"></canvas>
 
     <div id="endOverlay" class="overlay hidden">
       <div class="card" style="text-align:center; padding:24px; max-width:560px">
@@ -166,20 +169,15 @@ const fx = $("#fx"), fctx = fx.getContext('2d');
 /* Auto Performance Mode defaults */
 (function autoPerf(){
   try{
-    const dm = navigator.deviceMemory || 0; // GB (approx, Chrome-based)
+    const dm = navigator.deviceMemory || 0;
     const hc = navigator.hardwareConcurrency || 0;
     const ua = (navigator.userAgent||'').toLowerCase();
     const isAndroid = ua.includes('android');
     const isIPhone = ua.includes('iphone') || ua.includes('ipod');
     const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    // heuristik: device RAM <= 3GB, atau core <=4 pada ponsel, atau user prefer reduced motion
     const lowEnd = (dm && dm <= 3) || ((isAndroid||isIPhone) && hc && hc <= 4) || prefersReducedMotion;
-
-    if (lowEnd) {
-      perfMode.checked = true;
-    }
-  }catch(e){ /* ignore */ }
+    if (lowEnd) { perfMode.checked = true; }
+  }catch(e){}
 })();
 
 /* DPR & resize */
@@ -194,10 +192,10 @@ new ResizeObserver(fitCanvas).observe(stage); fitCanvas();
 
 /* ====== STORAGE ====== */
 const store = {
-  get best(){ try{ return Number(localStorage.getItem('bestV62')||0) }catch{ return 0 } },
-  set best(v){ try{ localStorage.setItem('bestV62', v) }catch{} },
-  get board(){ try{ return JSON.parse(localStorage.getItem('boardV62')||'[]') }catch{ return [] } },
-  set board(arr){ try{ localStorage.setItem('boardV62', JSON.stringify(arr)) }catch{} }
+  get best(){ try{ return Number(localStorage.getItem('bestV63')||0) }catch{ return 0 } },
+  set best(v){ try{ localStorage.setItem('bestV63', v) }catch{} },
+  get board(){ try{ return JSON.parse(localStorage.getItem('boardV63')||'[]') }catch{ return [] } },
+  set board(arr){ try{ localStorage.setItem('boardV63', JSON.stringify(arr)) }catch{} }
 };
 bestBadge.textContent = "Best: " + store.best;
 
@@ -206,7 +204,7 @@ let audioCtx=null, muted=false;
 function ensureAudio(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }
 async function unlockAudio(){ ensureAudio(); try{ if(audioCtx.state==='suspended') await audioCtx.resume(); }catch{} }
 function tone(freq=880, dur=0.06, type='sine', gain=0.12){
-  if(muted || perfMode.checked) return; // hemat CPU
+  if(muted || perfMode.checked) return;
   ensureAudio();
   const o = audioCtx.createOscillator(); o.type=type; o.frequency.value=freq;
   const g = audioCtx.createGain(); g.gain.value=gain;
@@ -225,7 +223,7 @@ function successChord(){
 }
 function boom(){
   if(muted || perfMode.checked) return; ensureAudio();
-  const bufferSize=audioCtx.sampleRate/2; // lebih pendek
+  const bufferSize=audioCtx.sampleRate/2;
   const noise=audioCtx.createBuffer(1,bufferSize,audioCtx.sampleRate);
   const out=noise.getChannelData(0); for(let i=0;i<bufferSize;i++) out[i]=Math.random()*2-1;
   const src=audioCtx.createBufferSource(); src.buffer=noise;
@@ -240,9 +238,9 @@ let LANES = 3, laneEls = [];
 let state = { running:false, time:30, score:0, spawnTimer:0, lastTs:0, objects:[] };
 let idSeq=0;
 
-/* ====== FX PARTICLE SYSTEM (single RAF) ====== */
-const MAX_PARTICLES = 140; // sedikit diturunkan
-const particles = []; // {x,y,vx,vy,life,size,type}
+/* ====== FX PARTICLE (single RAF) ====== */
+const MAX_PARTICLES = 140;
+const particles = [];
 function addSparkle(x, y){
   if (perfMode.checked) return;
   const N = 9;
@@ -319,7 +317,7 @@ function currentHeartRatio(){ return (trainingMode.value === 'on') ? 1.0 : 0.62;
 function spawn(){
   const lane = Math.floor(Math.random()*LANES);
   const type = Math.random()<currentHeartRatio() ? 'heart':'bomb';
-  const size = 46 + Math.random()*10; // sedikit lebih kecil
+  const size = 46 + Math.random()*10;
   const speed = BASE_SPEED + Math.min(state.score* SPEED_SCALE, 220);
   const id = ++idSeq;
   state.objects.push({id,lane,y:-size,type,size,speed});
@@ -375,9 +373,10 @@ function laneTapPick(lane, tapClientY){
   return best || topmostInLane(lane);
 }
 
-/* ====== LOOP (single RAF for game + FX) ====== */
+/* ====== LOOP (single RAF) ====== */
+let rafId = 0;
 function loop(ts){
-  if(!state.running) return;
+  if(!state.running){ rafId = 0; return; }
   const dt = Math.min(50, ts - state.lastTs);
   state.lastTs = ts;
 
@@ -405,7 +404,7 @@ function loop(ts){
   }
 
   drawParticles(dt);
-  requestAnimationFrame(loop);
+  rafId = requestAnimationFrame(loop);
 }
 
 /* ====== END & LEADERBOARD ====== */
@@ -465,9 +464,10 @@ function bindLaneHandlers(){
         state.score++; scoreBadge.textContent='Skor: '+state.score;
         navigator.vibrate?.(6); tone(880,0.045,'sine',0.08);
         popFx(pick);
-        const w = fx.width / (window.devicePixelRatio||1);
+        const dpr = window.devicePixelRatio||1;
+        const w = fx.width / dpr, h = fx.height / dpr;
         const x = (pick.lane + 0.5) * (w / LANES);
-        const y = pick.y * (fx.height / stage.clientHeight / (window.devicePixelRatio||1));
+        const y = pick.y * (h / stage.clientHeight);
         addSparkle(x, y);
       } else {
         if (trainingMode.value === 'on'){
@@ -519,18 +519,16 @@ function bombSVG(size){
 }
 
 /* ====== BUTTONS ====== */
-startBtn.addEventListener('click', ()=>{ 
+function startGame(){
   const n = Number(laneMode.value)||3;
   buildLanes(n);
-  reset(); 
-  requestAnimationFrame(loop); 
-});
-playAgain?.addEventListener('click', ()=>{ 
-  const n = Number(laneMode.value)||3;
-  buildLanes(n);
-  reset(); 
-  requestAnimationFrame(loop); 
-});
+  reset();
+  // prewarm untuk memastikan objek langsung terlihat
+  for (let i=0;i<2;i++) spawn();
+  if (!rafId){ fitCanvas(); rafId = requestAnimationFrame(loop); }
+}
+startBtn.addEventListener('click', startGame);
+playAgain?.addEventListener('click', startGame);
 muteBtn.addEventListener('click', ()=>{
   unlockAudio();
   muted = !muted;
